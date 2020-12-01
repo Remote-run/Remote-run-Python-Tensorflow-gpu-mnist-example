@@ -6,9 +6,15 @@ from tensorflow.keras import datasets, layers, models
 import matplotlib.pyplot as plt
 
 
+gpus = tf.config.experimental.list_physical_devices('GPU')
+tf.config.experimental.set_memory_growth(gpus[0], True)
+
+
+
 # setup the save stuff
-checkpoint_path = "save_data/cp.ckpt"
+checkpoint_path = "./save_data/cp.ckpt"
 checkpoint_dir = os.path.dirname(checkpoint_path)
+print(checkpoint_dir)
 
 cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  save_weights_only=True,
@@ -34,7 +40,7 @@ for i in range(25):
     # The CIFAR labels happen to be arrays, 
     # which is why you need the extra index
     plt.xlabel(class_names[train_labels[i][0]])
-plt.savefig('save_data/example_images.png')
+plt.savefig('./save_data/example_images.png')
 plt.close()
 
 
@@ -56,7 +62,7 @@ model.compile(optimizer='adam',
               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
               metrics=['accuracy'])
 
-history = model.fit(train_images, train_labels, epochs=1, 
+history = model.fit(train_images, train_labels, epochs=10, 
                     validation_data=(test_images, test_labels),callbacks=[cp_callback])
 
 plt.plot(history.history['accuracy'], label='accuracy')
@@ -66,7 +72,8 @@ plt.ylabel('Accuracy')
 plt.ylim([0.5, 1])
 plt.legend(loc='lower right')
 
-plt.savefig('save_data/acc_plot.png')
+plt.savefig('./save_data/acc_plot.png')
+
 
 test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
 
