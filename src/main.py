@@ -2,7 +2,7 @@ import os
 
 import tensorflow as tf
 
-from tensorflow.keras import datasets, layers, models
+from tensorflow.keras import datasets, layers, models, optimizers
 import matplotlib.pyplot as plt
 
 
@@ -20,50 +20,46 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  save_weights_only=True,
                                                  verbose=1)
 
-# load dataset
-(train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
-
-# Normalize pixel values to be between 0 and 1
-train_images, test_images = train_images / 255.0, test_images / 255.0
-
-
-class_names = ['airplane', 'automobile', 'bird', 'cat', 'deer',
-               'dog', 'frog', 'horse', 'ship', 'truck']
-
-plt.figure(figsize=(10,10))
-for i in range(25):
-    plt.subplot(5,5,i+1)
-    plt.xticks([])
-    plt.yticks([])
-    plt.grid(False)
-    plt.imshow(train_images[i], cmap=plt.cm.binary)
-    # The CIFAR labels happen to be arrays, 
-    # which is why you need the extra index
-    plt.xlabel(class_names[train_labels[i][0]])
-plt.savefig('./save_data/example_images.png')
-plt.close()
 
 
 
+mnist = tf.keras.datasets.mnist
 
-model = models.Sequential()
-model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
-model.add(layers.MaxPooling2D((2, 2)))
-model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-model.add(layers.MaxPooling2D((2, 2)))
-model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+x_train = tf.cast(x_train, tf.float32)
+y_train = tf.cast(y_train, tf.float32)
+x_test = tf.cast(x_test, tf.float32)
+y_test = tf.cast(y_test, tf.float32)
+
+dropout = 0.75 # Dropout, probability to keep units
+learning_rate = 0.001
 
 
-model.add(layers.Flatten())
-model.add(layers.Dense(64, activation='relu'))
-model.add(layers.Dense(10))
+model = tf.keras.models.Sequential([
+    layers.Reshape(target_shape=[ 28, 28,1]),
+    layers.Conv2D( 64, 5, activation=tf.nn.relu),
+    layers.MaxPooling2D(( 2, 2)),
+    layers.Conv2D( 256, 3, activation=tf.nn.relu),
+    layers.Conv2D( 512, 3, activation=tf.nn.relu),
+    layers.MaxPooling2D(( 2, 2)),
+    layers.Flatten(),
+    layers.Dense( 2048),
+    layers.Dropout(dropout),
+    layers.Dense( 1024),
+    layers.Dropout(dropout),
+    layers.Dense( 10),
+])
 
-model.compile(optimizer='adam',
-              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-              metrics=['accuracy'])
 
-history = model.fit(train_images, train_labels, epochs=10, 
-                    validation_data=(test_images, test_labels),callbacks=[cp_callback])
+optimizers = optimizers.Adam(learning_rate=learning_rate)
+model.compile(optimizer=optimizers,
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+            metrics=['accuracy'])
+
+history = model.fit(x_train, y_train, epochs=10, 
+                    validation_data=(x_test, y_test),callbacks=[cp_callback])
+
 
 plt.plot(history.history['accuracy'], label='accuracy')
 plt.plot(history.history['val_accuracy'], label = 'val_accuracy')
@@ -75,5 +71,6 @@ plt.legend(loc='lower right')
 plt.savefig('./save_data/acc_plot.png')
 
 
-test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
 
+
+test_loss, test_acc = model.evaluate(x_test,  y_test, verbose=2)
