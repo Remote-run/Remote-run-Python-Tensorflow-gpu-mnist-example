@@ -44,8 +44,6 @@ model = tf.keras.models.Sequential([
     layers.Conv2D( 512, 3, activation=tf.nn.relu),
     layers.MaxPooling2D(( 2, 2)),
     layers.Flatten(),
-    layers.Dense( 2048),
-    layers.Dropout(dropout),
     layers.Dense( 1024),
     layers.Dropout(dropout),
     layers.Dense( 10),
@@ -57,7 +55,7 @@ model.compile(optimizer=optimizers,
             loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
             metrics=['accuracy'])
 
-history = model.fit(x_train, y_train, epochs=10, 
+history = model.fit(x_train, y_train, epochs=3, 
                     validation_data=(x_test, y_test),callbacks=[cp_callback])
 
 
@@ -74,3 +72,6 @@ plt.savefig('./save_data/acc_plot.png')
 
 
 test_loss, test_acc = model.evaluate(x_test,  y_test, verbose=2)
+
+print("test loss", test_loss)
+print("test acc", test_acc)
